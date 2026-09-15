@@ -249,6 +249,31 @@ FAKE_AGE_RECIPIENT="age1acdefghjklmnpqrstuvwxyz023456789acdefghjklmnpqrstuvwxyz0
     grep -qE '^\[WARN\] backup: ning.n archivo en '"$OPENBRAIN_BACKUP_DIR" <<<"$output"
 }
 
+@test "backup: rama Task Scheduler, tarea creada, sin warn" {
+    BIN="$BATS_TEST_TMPDIR/bin"; mkdir -p "$BIN"
+    printf '#!/usr/bin/env bash\necho MINGW64_NT-10.0-19045\n' > "$BIN/uname"; chmod +x "$BIN/uname"
+    printf '#!/usr/bin/env bash\ncase "$*" in\n  *"/query /tn openbrain-memory-backup"*) exit 0 ;;\n  *) exit 1 ;;\nesac\n' > "$BIN/schtasks"
+    chmod +x "$BIN/schtasks"
+    export OPENBRAIN_BACKUP_AGE="$FAKE_AGE_RECIPIENT"
+    export OPENBRAIN_BACKUP_DIR="$BATS_TEST_TMPDIR/backups-win"; mkdir -p "$OPENBRAIN_BACKUP_DIR"
+    : > "$OPENBRAIN_BACKUP_DIR/memory-20260101T000000Z.tar.gz.age"
+    run env PATH="$BIN:$PATH" bash "$S/openbrain-doctor.sh"
+    grep -qE '^\[OK\]   backup: planificador activo \(openbrain-memory-backup\)' <<<"$output"
+    grep -qE '^\[OK\]   backup: .ltimo archivo hace 0 d.a\(s\)' <<<"$output"
+}
+
+@test "backup: rama Task Scheduler, tarea no creada y sin archivos: WARN" {
+    BIN="$BATS_TEST_TMPDIR/bin"; mkdir -p "$BIN"
+    printf '#!/usr/bin/env bash\necho MINGW64_NT-10.0-19045\n' > "$BIN/uname"; chmod +x "$BIN/uname"
+    printf '#!/usr/bin/env bash\nexit 1\n' > "$BIN/schtasks"; chmod +x "$BIN/schtasks"
+    export OPENBRAIN_BACKUP_AGE="$FAKE_AGE_RECIPIENT"
+    export OPENBRAIN_BACKUP_DIR="$BATS_TEST_TMPDIR/backups-win-vacio"
+    run env PATH="$BIN:$PATH" bash "$S/openbrain-doctor.sh"
+    [ "$status" -eq 1 ]
+    grep -qE '^\[WARN\] backup: planificador no activo \(openbrain install --apply\)' <<<"$output"
+    grep -qE '^\[WARN\] backup: ning.n archivo en '"$OPENBRAIN_BACKUP_DIR" <<<"$output"
+}
+
 @test "backup: archivo mas viejo que 2 dias: WARN con dias" {
     BIN="$BATS_TEST_TMPDIR/bin"; mkdir -p "$BIN"
     printf '#!/usr/bin/env bash\nexit 0\n' > "$BIN/systemctl"

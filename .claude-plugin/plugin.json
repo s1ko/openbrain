@@ -1,6 +1,6 @@
 {
   "name": "openbrain",
-  "description": "Second brain (qmd recall), cascaded memory (HMAC-signed auto-memory) and continuous-improvement loop (recall eval, memory hygiene, doctrine review, lesson capture) for Claude Code. macOS + Linux.",
+  "description": "Second brain (qmd recall), cascaded memory (HMAC-signed auto-memory) and continuous-improvement loop (recall eval, memory hygiene, doctrine review, lesson capture) for Claude Code. macOS + Linux + Windows (Git for Windows).",
   "version": "0.1.0",
   "author": { "name": "s1ko" },
   "license": "MIT",

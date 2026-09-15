@@ -2,7 +2,7 @@
 
 Plugin de Claude Code: segundo cerebro con recall (`qmd`), memoria en
 cascada firmada con HMAC, doctrina dinámica y un bucle de mejora continua.
-macOS + Linux.
+macOS + Linux + Windows (Git for Windows).
 
 ## Qué es
 
@@ -64,11 +64,11 @@ memoria existente (`openbrain memory sign`) y verificar con `/openbrain:doctor`.
 | `/openbrain:eval [--hybrid] [--verbose]` | Mide recall (BM25 y/o híbrido) contra el golden set. | Sí — anexa a `metrics.log` |
 | `/openbrain:review [--run <bloque> \| --mark <bloque> <fecha>]` | Lista reviews con estado, lanza una consolidación, o marca un review como aplicado. | Sí — el fichero de review (`_review/<fecha>/<bloque>.md`) y el marcador `.applied.<bloque>`; nunca el bloque de doctrina |
 | `/openbrain:capture` | Revisa candidatos de lección capturados y los promueve a memoria/wiki, uno a uno. | Sí — solo con OK explícito por candidato |
-| `/openbrain:memory <op>` | Operaciones de memoria: `lint verify sign index metrics promote mark-reviewed backup restore dedupe search redact`. | Depende de `op` — ver más abajo |
+| `/openbrain:memory <op>` | Operaciones de memoria: `lint verify sign index metrics mark-reviewed backup restore dedupe redact`. | Depende de `op` — ver más abajo |
 | `/openbrain:install [--check\|--apply] [--remove-legacy]` | Verifica o instala lo que el plugin necesita fuera del repo. | Sí con `--apply`/`--remove-legacy`, siempre fuera de `settings.json` |
 
-`/openbrain:memory`: `lint`, `verify`, `metrics`, `search` y `redact` son de
-solo lectura. `sign`, `index`, `dedupe`, `promote` y `mark-reviewed`
+`/openbrain:memory`: `lint`, `verify`, `metrics` y `redact` son de
+solo lectura. `sign`, `index`, `dedupe` y `mark-reviewed`
 escriben memoria curada y piden confirmación en terminal antes de tocar
 nada (salvo que se pase `--yes`). `backup` y `restore` **no** piden
 confirmación en terminal: `backup` solo escribe el archivo cifrado en
@@ -91,14 +91,14 @@ uso: openbrain <comando> [args]
   capture list|show <sid>|purge  candidatos de lección de la captura activa
   eval [--hybrid] [--verbose]    medir recall y anexar a metrics.log
   review [--run <b>|--mark <b> <fecha>]  reviews de doctrina con estado / consolidar / marcar aplicado
-  memory <op> [args]             lint verify sign index metrics promote mark-reviewed backup restore dedupe [--apply] search redact
+  memory <op> [args]             lint verify sign index metrics mark-reviewed backup restore dedupe [--apply] redact
   install [--check|--apply] [--remove-legacy]  verificar/instalar (imprime el diff de settings.json, nunca lo aplica)
   triggers [--force|--check]     compilar triggers de doctrina
   config                         valores efectivos de OPENBRAIN_* (openbrain.env + defaults)
   version | help
 ```
 
-Las ops de memoria que **escriben** (`sign index dedupe promote
+Las ops de memoria que **escriben** (`sign index dedupe
 mark-reviewed`) piden confirmación; `--yes` la omite (pensado para
 planificadores, no para uso interactivo casual).
 
@@ -229,7 +229,7 @@ openbrain/
 ├── hooks/             openbrain-hook.sh (despachador), session-doctrine load-global-memory refresh-doctrine doctrine-watch verify-memory doctrine-journal doctrine-lazy-check capture-candidate capture-flush sign-memory
 ├── scripts/           implementación; scripts/lib/ = config.sh portable.sh triggers.sh common.sh render.sh
 ├── eval/              golden set y runners de recall
-├── install/           systemd/ launchd/ git/ env/ — plantillas instalables
+├── install/           systemd/ launchd/ wintask/ git/ env/ — plantillas instalables
 ├── templates/         memoria, artículo de wiki, bloque de doctrina
 ├── tools/refresh-claude-md/   splice de doctrina en CLAUDE.md, con su propia suite pytest
 ├── tests/             bats/ + fixtures/ (siempre sintéticas)

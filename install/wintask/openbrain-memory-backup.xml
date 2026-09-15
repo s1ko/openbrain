@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Task version="1.2" xmlns="http://schemas.microsoft.com/windows/2004/02/mit/task">
+  <RegistrationInfo>
+    <Description>openbrain: backup cifrado de la memoria de Claude</Description>
+  </RegistrationInfo>
+  <Triggers>
+    <CalendarTrigger>
+      <StartBoundary>2024-01-01T03:30:00</StartBoundary>
+      <ScheduleByDay>
+        <DaysInterval>1</DaysInterval>
+      </ScheduleByDay>
+    </CalendarTrigger>
+  </Triggers>
+  <Principals>
+    <Principal id="Author">
+      <LogonType>InteractiveToken</LogonType>
+      <RunLevel>LeastPrivilege</RunLevel>
+    </Principal>
+  </Principals>
+  <Settings>
+    <MultipleInstancesPolicy>IgnoreNew</MultipleInstancesPolicy>
+    <StartWhenAvailable>true</StartWhenAvailable>
+    <RunOnlyIfNetworkAvailable>false</RunOnlyIfNetworkAvailable>
+    <AllowStartOnDemand>true</AllowStartOnDemand>
+    <Enabled>true</Enabled>
+    <RandomDelay>PT10M</RandomDelay>
+    <ExecutionTimeLimit>PT30M</ExecutionTimeLimit>
+  </Settings>
+  <Actions Context="Author">
+    <Exec>
+      <Command>__BASH_EXE__</Command>
+      <Arguments>-lc "exec __OPENBRAIN_BIN__ memory backup --yes"</Arguments>
+    </Exec>
+  </Actions>
+</Task>

@@ -4,6 +4,10 @@ load helpers
 @test "README documenta cada comando y cada op de memoria" {
     for c in doctor recall ingest eval review capture memory install; do grep -q "openbrain:$c\|openbrain $c" "$REPO_ROOT/README.md"; done
 }
+@test "la lista de ops de memory en README coincide con la de bin/openbrain, sin drift" {
+    bin_line="$(grep 'memory <op> \[args\]' "$REPO_ROOT/bin/openbrain")"
+    grep -qF "$bin_line" "$REPO_ROOT/README.md"
+}
 @test "toda OPENBRAIN_* de config.sh aparece en openbrain.env.example" {
     while IFS= read -r v; do grep -q "^$v=" "$REPO_ROOT/install/env/openbrain.env.example" || { echo "falta $v en el ejemplo"; false; }; done \
       < <(grep -oE '\$\{OPENBRAIN_[A-Z0-9_]+:=' "$REPO_ROOT/scripts/lib/config.sh" | sed 's/[${:=]//g' | grep -vE 'OPENBRAIN_(TRIGGERS_CONF|REVIEW_SKIP|CAPTURE_DIR|GLOBAL_MEMORY)' | sort -u)

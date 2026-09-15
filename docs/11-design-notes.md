@@ -551,6 +551,28 @@ incluido `doctrine-watch.sh`, que corre en cada tool call y no usa ninguna.
 La API pública es solo lo que tiene llamador: `p_sha256` y `p_find_newer` se
 retiraron sin sustituto.
 
+`p_os` gana `windows` para `uname -s` con prefijo `MINGW`/`MSYS`/`CYGWIN`
+(lo que reporta Git Bash/MSYS2). No hace falta ninguna rama nueva en
+`_p_stat`/`_p_date`/`_p_b64`/`p_secure_rm`: sondean por capacidad del binario,
+no por SO, y Git for Windows trae coreutils GNU vía MSYS2 — `p_secure_rm` ya
+caía a `rm -f` para cualquier SO no reconocido, así que Windows hereda ese
+mismo fallback sin tocar el `case`.
+
+**Riesgo abierto, sin verificar en Windows real**: los 28 entrypoints (todo
+lo que resuelve su propio `_self` desde `BASH_SOURCE[0]`, `scripts/lib/common.sh`
+queda fuera a propósito — ver su propia nota) añaden, justo tras el bucle de
+resolución de symlinks, `case "$_self" in *\\*) command -v cygpath >/dev/null
+2>&1 && _self="$(cygpath -u "$_self")" ;; esac`. Es una traducción defensiva
+por si `${CLAUDE_PLUGIN_ROOT}` llega a Git Bash con separadores `\` en vez de
+`/` — la documentación de Claude Code confirma que los placeholders de ruta
+se sustituyen como string plano sin normalizar, pero no dice en qué forma
+llegan bajo Git Bash. Si `_self` no lleva backslash (todo POSIX, todo
+Windows-Git-Bash-nativo bien resuelto) o si `cygpath` no existe (macOS,
+Linux), la línea es un no-op — cero riesgo fuera de Windows. Si en Windows
+real `BASH_SOURCE[0]` ya llega en forma POSIX (`/c/Users/...`), esta línea
+tampoco hace nada y sobra pero no rompe. Falta confirmar en una máquina
+Windows real cuál de los dos casos ocurre.
+
 ### `render.sh`
 Sustituye `{{CLAVE}}` en una sola pasada de regex, no con `replace()`
 encadenados: un valor insertado que contuviera `{{OTRA}}` (journal, notas,
@@ -737,6 +759,26 @@ La unidad systemd y el plist se renderizan al instalar (`__BACKUP_DIR__`,
 hacía fallar cada backup programado, y `ConditionPathExists` fijo saltaba el
 timer en silencio bajo otro `XDG_CONFIG_HOME`. `node` se comprueba como
 dependencia: `qmd` lo necesita.
+
+La rama `windows` (Task Scheduler) no tiene equivalente de
+`ConditionPathExists`: la XML de Task Scheduler no ofrece una condición
+declarativa de "salta si falta este fichero", así que `__CONFIG_FILE__` ni se
+sustituye ahí — si `openbrain.env` falta, `openbrain memory backup` falla al
+arrancar en vez de no lanzarse, mismo resultado observable (backup no corre),
+peor trazabilidad (un intento fallido en vez de ningún intento). El XML
+renderizado se escribe en `$OPENBRAIN_BACKUP_DIR/openbrain-memory-backup.xml`
+(no en un `mktemp` que se borra) a propósito: a diferencia del plist/unit no
+hay un fichero "instalado" persistente que inspeccionar (la tarea vive en el
+almacén interno de Task Scheduler), así que este es el único artefacto que
+un operador puede releer o volver a registrar a mano con `schtasks /create
+/xml ... /f` si algo falla. `<Command>` y la ruta pasada a `/xml` van por
+`cygpath -w`: `schtasks.exe` los resuelve con las APIs de Windows, no con la
+capa POSIX de MSYS2, y necesitan forma nativa (`C:\...`) aunque el resto del
+script razone en rutas `/c/...`. **Sin verificar en Windows real**: si
+`schtasks /create /xml` rechaza un XML en UTF-8 plano (hay reportes de que
+en ciertas configuraciones regionales exige UTF-16) haría falta convertir con
+`iconv -t UTF-16LE` y anteponer BOM antes de escribir el fichero — no
+implementado porque no hay forma de confirmar el requisito sin la máquina.
 
 El symlink `~/.local/bin/refresh-claude-md` que creaban versiones anteriores
 se lista como legacy: `refresh-doctrine.sh` invoca la herramienta del plugin

@@ -121,6 +121,36 @@ setup() {
     [ "$(bash -c "source '$S/lib/portable.sh'; p_stat_perms '$custom_dir'")" = 700 ]
 }
 
+@test "planificador --apply renderiza la tarea de Task Scheduler en Windows, sin placeholders" {
+    BIN="$BATS_TEST_TMPDIR/bin"; mkdir -p "$BIN"
+    printf '#!/usr/bin/env bash\necho MINGW64_NT-10.0-19045\n' > "$BIN/uname"; chmod +x "$BIN/uname"
+    printf '#!/usr/bin/env bash\nexit 0\n' > "$BIN/schtasks"; chmod +x "$BIN/schtasks"
+    cat > "$BIN/cygpath" <<'EOF'
+#!/usr/bin/env bash
+[ "$1" = -w ] && shift
+printf 'C:\\win\\%s\n' "$(basename "$1")"
+EOF
+    chmod +x "$BIN/cygpath"
+    custom_dir="$HOME/custom-backups/memory"
+    run env PATH="$BIN:$PATH" OPENBRAIN_BACKUP_DIR="$custom_dir" \
+        OPENBRAIN_BACKUP_GPG=0123456789ABCDEF0123456789ABCDEF01234567 \
+        bash -c "echo y | bash '$S/openbrain-install.sh' --apply"
+    [[ "$output" == *"[OK]    Task Scheduler: openbrain-memory-backup"* ]]
+    xml="$custom_dir/openbrain-memory-backup.xml"
+    [ -f "$xml" ]
+    grep -qF "exec $HOME/.local/bin/openbrain memory backup --yes" "$xml"
+    ! grep -q '__' "$xml"
+}
+
+@test "planificador --check en Windows reporta si la tarea esta creada" {
+    BIN="$BATS_TEST_TMPDIR/bin"; mkdir -p "$BIN"
+    printf '#!/usr/bin/env bash\necho MINGW64_NT-10.0-19045\n' > "$BIN/uname"; chmod +x "$BIN/uname"
+    printf '#!/usr/bin/env bash\nexit 1\n' > "$BIN/schtasks"; chmod +x "$BIN/schtasks"
+    run env PATH="$BIN:$PATH" OPENBRAIN_BACKUP_GPG=0123456789ABCDEF0123456789ABCDEF01234567 \
+        bash "$S/openbrain-install.sh" --check
+    [[ "$output" == *"[FALTA] planificador no instalado"* ]]
+}
+
 @test "planificador --apply rechaza OPENBRAIN_BACKUP_DIR con '#': falta y no renderiza nada" {
     BIN="$BATS_TEST_TMPDIR/bin"; mkdir -p "$BIN"
     printf '#!/usr/bin/env bash\nexit 0\n' > "$BIN/systemctl"; chmod +x "$BIN/systemctl"

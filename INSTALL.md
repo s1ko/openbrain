@@ -23,6 +23,29 @@ si no viene por el gestor de paquetes del sistema). `python3` debe ser
 en macOS (Xcode) es 3.9. `openbrain doctor` y `openbrain install` avisan si el
 `python3` del PATH no lo trae.
 
+**Windows**: instala [Git for Windows](https://gitforwindows.org/) — es lo
+mismo que ya recomienda Claude Code para que la tool Bash funcione nativa en
+Windows, y trae el bash (MSYS2) y el `openssl` que usa este plugin. El resto
+de dependencias, vía [winget](https://learn.microsoft.com/windows/package-manager/winget/)
+o [scoop](https://scoop.sh/), desde una consola de **Git Bash**:
+
+```bash
+winget install -e --id Git.Git          # si no lo instalaste ya
+winget install -e --id jqlang.jq
+winget install -e --id GitLeaks.GitLeaks
+winget install -e --id GnuPG.Gpg4win
+winget install -e --id Python.Python.3.12
+winget install -e --id OpenJS.NodeJS.LTS
+npm i -g @tobilu/qmd
+# age no está en winget: descarga el binario de https://github.com/FiloSottile/age/releases
+```
+
+Todos los comandos de este documento (`openbrain ...`, `make test`, etc.) se
+ejecutan igual, desde una consola de Git Bash. El sandbox propio de Claude
+Code no cubre Windows nativo (solo macOS/Linux/WSL2) — es una limitación del
+harness, no del plugin: los hooks y scripts corren sin ese aislamiento
+adicional.
+
 Desarrollo (para `make test`):
 
 ```bash
@@ -186,7 +209,7 @@ Dos backends; si están los dos definidos gana age.
 Entonces:
 
 ```bash
-openbrain install --apply     # instala el planificador (launchd en macOS, systemd --user en Linux)
+openbrain install --apply     # instala el planificador (launchd/systemd --user/Task Scheduler)
 openbrain memory backup
 ```
 
@@ -232,6 +255,9 @@ rm -f ~/Library/LaunchAgents/com.openbrain.memory-backup.plist
 # Linux
 systemctl --user disable --now openbrain-memory-backup.timer
 rm -f ~/.config/systemd/user/openbrain-memory-backup.{service,timer}
+# Windows (Git Bash)
+schtasks /delete /tn openbrain-memory-backup /f
+rm -f "$OPENBRAIN_BACKUP_DIR/openbrain-memory-backup.xml"
 ```
 
 `~/.config/claude/openbrain.env`, la clave HMAC y la memoria/wiki/doctrina en

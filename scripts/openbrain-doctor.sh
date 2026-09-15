@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -uo pipefail
 _self="${BASH_SOURCE[0]}"; while [ -L "$_self" ]; do _t="$(readlink "$_self")"; case "$_t" in /*) _self="$_t" ;; *) _self="$(dirname "$_self")/$_t" ;; esac; done
+case "$_self" in *\\*) command -v cygpath >/dev/null 2>&1 && _self="$(cygpath -u "$_self")" ;; esac
 SCRIPT_DIR="$(cd "$(dirname "$_self")" && pwd -P)"
 # shellcheck source=lib/common.sh
 source "$SCRIPT_DIR/lib/common.sh"
@@ -165,6 +166,10 @@ else
         darwin)
             if ! command -v launchctl >/dev/null 2>&1; then ok "backup: sin planificador soportado"
             elif launchctl print "gui/$(id -u)/com.openbrain.memory-backup" >/dev/null 2>&1; then ok "backup: planificador activo (com.openbrain.memory-backup)"
+            else warn "backup: planificador no activo (openbrain install --apply)"; fi ;;
+        windows)
+            if ! command -v schtasks >/dev/null 2>&1; then ok "backup: sin planificador soportado"
+            elif schtasks /query /tn openbrain-memory-backup >/dev/null 2>&1; then ok "backup: planificador activo (openbrain-memory-backup)"
             else warn "backup: planificador no activo (openbrain install --apply)"; fi ;;
         *) ok "backup: sin planificador soportado" ;;
     esac

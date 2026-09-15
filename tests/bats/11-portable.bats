@@ -20,6 +20,16 @@ bsd_available() { [ "$(uname -s)" = Darwin ] && /usr/bin/stat -f %m / >/dev/null
     [[ "$output" == darwin || "$output" == linux ]]
 }
 
+@test "p_os detecta windows via uname MINGW/MSYS/CYGWIN" {
+    STUB="$BATS_TEST_TMPDIR/stub-uname"; mkdir -p "$STUB"
+    for k in MINGW64_NT-10.0-19045 MSYS_NT-10.0-19045 CYGWIN_NT-10.0; do
+        printf '#!/usr/bin/env bash\necho "%s"\n' "$k" > "$STUB/uname"
+        chmod +x "$STUB/uname"
+        PATH="$STUB:$PATH" run_p "" 'p_os'
+        [ "$output" = "windows" ]
+    done
+}
+
 @test "p_stat_perms: 640 en ambas ramas" {
     run_p gnu "p_stat_perms '$F'"; [ "$output" = "640" ]
     bsd_available || skip "sin binarios BSD en este host"

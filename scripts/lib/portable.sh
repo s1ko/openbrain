@@ -8,6 +8,7 @@ p_os() {
     case "$(uname -s 2>/dev/null)" in
         Darwin) printf 'darwin\n' ;;
         Linux)  printf 'linux\n' ;;
+        MINGW*|MSYS*|CYGWIN*) printf 'windows\n' ;;
         *)      printf 'other\n' ;;
     esac
 }

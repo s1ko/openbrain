@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -uo pipefail
 _self="${BASH_SOURCE[0]}"; while [ -L "$_self" ]; do _t="$(readlink "$_self")"; case "$_t" in /*) _self="$_t" ;; *) _self="$(dirname "$_self")/$_t" ;; esac; done
+case "$_self" in *\\*) command -v cygpath >/dev/null 2>&1 && _self="$(cygpath -u "$_self")" ;; esac
 SCRIPT_DIR="$(cd "$(dirname "$_self")" && pwd -P)"; ROOT="$(cd "$SCRIPT_DIR/.." && pwd -P)"
 # shellcheck source=lib/common.sh
 source "$SCRIPT_DIR/lib/common.sh"
@@ -80,7 +81,19 @@ elif [ "$MODE" = apply ]; then
             install -m 644 "$svc_tmp" "$d/openbrain-memory-backup.service"; rm -f "$svc_tmp"
             install -m 644 "$ROOT/install/systemd/openbrain-memory-backup.timer" "$d/"
             if systemctl --user daemon-reload && systemctl --user enable --now openbrain-memory-backup.timer; then ok "systemd: openbrain-memory-backup.timer"; else falta "systemctl --user falló"; fi
-        else falta "sin planificador soportado ($(p_os): ni launchctl ni systemctl --user)"; fi
+        elif [ "$(p_os)" = windows ] && command -v schtasks >/dev/null 2>&1; then
+            if ! command -v cygpath >/dev/null 2>&1; then falta "cygpath no encontrado: instala Git for Windows para el planificador"
+            else
+                install -d -m 700 "$OPENBRAIN_BACKUP_DIR"
+                xml="$OPENBRAIN_BACKUP_DIR/openbrain-memory-backup.xml"
+                sed -e "s#__BACKUP_DIR__#$OPENBRAIN_BACKUP_DIR#g" -e "s#__OPENBRAIN_BIN__#$BIN_DIR/openbrain#g" \
+                    -e "s#__BASH_EXE__#$(cygpath -w "$(command -v bash)")#g" \
+                    "$ROOT/install/wintask/openbrain-memory-backup.xml" > "$xml"
+                if schtasks /create /tn openbrain-memory-backup /xml "$(cygpath -w "$xml")" /f >/dev/null; then
+                    ok "Task Scheduler: openbrain-memory-backup"
+                else falta "schtasks /create falló"; fi
+            fi
+        else falta "sin planificador soportado ($(p_os): ni launchctl, ni systemctl --user, ni schtasks)"; fi
     else info "planificador omitido"; fi
 else
     if [ "$(p_os)" = darwin ] && command -v launchctl >/dev/null 2>&1; then
@@ -88,6 +101,9 @@ else
         else falta "planificador no instalado (--apply lo instala tras confirmar)"; fi
     elif [ "$(p_os)" = linux ] && command -v systemctl >/dev/null 2>&1; then
         if systemctl --user is-enabled openbrain-memory-backup.timer >/dev/null 2>&1; then ok "systemd: openbrain-memory-backup.timer (enabled)"
+        else falta "planificador no instalado (--apply lo instala tras confirmar)"; fi
+    elif [ "$(p_os)" = windows ] && command -v schtasks >/dev/null 2>&1; then
+        if schtasks /query /tn openbrain-memory-backup >/dev/null 2>&1; then ok "Task Scheduler: openbrain-memory-backup (creada)"
         else falta "planificador no instalado (--apply lo instala tras confirmar)"; fi
     else info "sin planificador soportado ($(p_os)): backup solo manual"; fi
 fi

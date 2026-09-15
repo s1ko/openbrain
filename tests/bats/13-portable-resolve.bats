@@ -70,3 +70,26 @@ EOF
     run grep -rl --exclude-dir=lib 'dirname "${BASH_SOURCE\[0\]}"' "$S" "$H" "$REPO_ROOT/bin" "$REPO_ROOT/eval"
     [ -z "$output" ] || { echo "sin resolver: $output"; false; }
 }
+
+@test "normalizacion cygpath: traduce una ruta con backslash solo si cygpath existe" {
+    SNIPPET="$(grep 'command -v cygpath' "$REPO_ROOT/bin/openbrain")"
+    STUB="$BATS_TEST_TMPDIR/stub-cygpath"; mkdir -p "$STUB"
+    cat > "$STUB/cygpath" <<'EOF'
+#!/usr/bin/env bash
+[ "$1" = -u ] && shift
+printf '/c/openbrain/root\n'
+EOF
+    chmod +x "$STUB/cygpath"
+
+    PATH="$STUB:$PATH" run bash -c "_self='C:\\openbrain\\root'; $SNIPPET; printf '%s' \"\$_self\""
+    [ "$output" = "/c/openbrain/root" ]
+
+    run bash -c "_self='/home/s1ko/openbrain/root'; $SNIPPET; printf '%s' \"\$_self\""
+    [ "$output" = "/home/s1ko/openbrain/root" ]
+}
+
+@test "todo ejecutable con bucle de resolucion de symlinks lleva tambien la normalizacion cygpath" {
+    for f in $(grep -rl 'BASH_SOURCE\[0\]' "$S" "$H" "$REPO_ROOT/bin" "$REPO_ROOT/eval" --exclude="$S/lib/common.sh"); do
+        grep -qF 'command -v cygpath >/dev/null 2>&1 && _self="$(cygpath -u "$_self")"' "$f" || { echo "sin normalizar: $f"; false; }
+    done
+}
