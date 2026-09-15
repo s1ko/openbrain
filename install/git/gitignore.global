@@ -1,0 +1,4 @@
+.claude/settings.local.json
+.claude/audit.log
+.claude/.credentials.json
+.claude/security_warnings_state_*.json

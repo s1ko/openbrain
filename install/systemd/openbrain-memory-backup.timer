@@ -1,0 +1,11 @@
+[Unit]
+Description=openbrain: backup diario de memoria
+
+[Timer]
+OnCalendar=daily
+Persistent=true
+RandomizedDelaySec=10m
+Unit=openbrain-memory-backup.service
+
+[Install]
+WantedBy=timers.target

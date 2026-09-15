@@ -1,0 +1,15 @@
+[Unit]
+Description=openbrain: backup cifrado de la memoria de Claude
+ConditionPathExists=__CONFIG_FILE__
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/openbrain memory backup --yes
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=__BACKUP_DIR__
+PrivateTmp=true
+NoNewPrivileges=true

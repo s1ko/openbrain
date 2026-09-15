@@ -1,0 +1,36 @@
+# refresh.toml — manifiesto de tools/refresh-claude-md/refresh_claude_md.py,
+# consumido por el hook refresh-doctrine.sh en cada SessionStart.
+# Copiar a ~/.claude/refresh.toml (y opcionalmente a <repo>/.claude/refresh.toml
+# para un repo listado en OPENBRAIN_REFRESH_ALLOWLIST, si además de refrescar el
+# CLAUDE.md global quieres refrescar también el CLAUDE.md local del repo).
+# El fichero destino (CLAUDE.md) debe llevar ya los marcadores
+# <!-- AUTO-START --> y <!-- AUTO-END -->: la herramienta rellena entre ellos,
+# no los crea.
+
+# Título de la sección generada (opcional; si se omite usa un default fijo
+# en el código).
+title = "Estado del host (auto)"
+
+# Cada [[field]] es una fila de la tabla. Presupuesto total de ejecución:
+# REFRESH_CLAUDE_MD_BUDGET segundos (default 8, ver README) repartido entre
+# los campos con `command`; el que no quepa toma su `default` sin ejecutarse.
+
+[[field]]
+# label: texto de la primera columna. Obligatorio.
+label = "Fecha UTC"
+# command: se ejecuta con el shell, con cwd = directorio del fichero destino.
+# Opcional — sin él, la fila muestra directamente `default`.
+command = "date -u +%Y-%m-%dT%H:%MZ"
+# default: valor mostrado si el comando falla, no existe, tarda demasiado,
+# o se agota el presupuesto total. Opcional (default "?").
+default = "?"
+
+[[field]]
+label = "gitleaks"
+command = "gitleaks version"
+default = "no instalado"
+
+[[field]]
+label = "python3"
+command = "python3 --version"
+default = "no instalado"

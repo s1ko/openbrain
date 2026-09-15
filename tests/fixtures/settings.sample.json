@@ -1,0 +1,21 @@
+{
+  "hooks": {
+    "SessionStart": [{"hooks": [
+      {"type":"command","command":"/HOME/.claude/hooks/session-start.sh"},
+      {"type":"command","command":"/HOME/.claude/hooks/session-doctrine.sh"},
+      {"type":"command","command":"/HOME/.claude/hooks/load-global-memory.sh"},
+      {"type":"command","command":"/HOME/.claude/hooks/refresh-doctrine.sh"}]}],
+    "PreToolUse": [
+      {"matcher":"Write|Edit|MultiEdit","hooks":[{"type":"command","command":"/HOME/.claude/hooks/gitleaks-guard.sh"}]},
+      {"matcher":"Bash","hooks":[{"type":"command","command":"/HOME/.claude/hooks/bash-guard.sh"}]},
+      {"matcher":"Bash|Read","hooks":[{"type":"command","command":"/HOME/.claude/hooks/doctrine-watch.sh"}]}],
+    "PostToolUse": [{"matcher":"Write|Edit|MultiEdit","hooks":[
+      {"type":"command","command":"/HOME/.claude/hooks/audit-log.sh"},
+      {"type":"command","command":"/HOME/.claude/hooks/verify-memory.sh"}]}],
+    "Stop": [{"hooks":[
+      {"type":"command","command":"/HOME/.claude/hooks/session-summary.sh"},
+      {"type":"command","command":"/HOME/.claude/hooks/doctrine-journal.sh"},
+      {"type":"command","command":"/HOME/.claude/scripts/doctrine-lazy-check.sh"}]}]
+  },
+  "otraClave": true
+}

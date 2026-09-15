@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+set -euo pipefail
+_self="${BASH_SOURCE[0]}"; while [ -L "$_self" ]; do _t="$(readlink "$_self")"; case "$_t" in /*) _self="$_t" ;; *) _self="$(dirname "$_self")/$_t" ;; esac; done
+ROOT="$(cd "$(dirname "$_self")/.." && pwd -P)"
+S="$ROOT/scripts"
+
+usage() {
+cat <<EOF
+uso: openbrain <comando> [args]
+  doctor                         salud de cerebro/memoria/doctrina/captura/aprendizaje (solo lectura)
+  recall [--lex|--hybrid] [-n N] [--json] <q>  buscar en el cerebro con scope forzado
+  capture list|show <sid>|purge  candidatos de lección de la captura activa
+  eval [--hybrid] [--verbose]    medir recall y anexar a metrics.log
+  review [--run <b>|--mark <b> <fecha>]  reviews de doctrina con estado / consolidar / marcar aplicado
+  memory <op> [args]             lint verify sign index metrics mark-reviewed backup restore dedupe [--apply] redact
+  install [--check|--apply] [--remove-legacy]  verificar/instalar (imprime el diff de settings.json, nunca lo aplica)
+  triggers [--force|--check]     compilar triggers de doctrina
+  config                         valores efectivos de OPENBRAIN_* (openbrain.env + defaults)
+  version | help
+Ops de memoria que ESCRIBEN (sign index mark-reviewed, dedupe --apply) piden confirmación; --yes la omite. dedupe sin --apply es dry-run.
+EOF
+}
+
+map() {
+    case "$1" in
+        doctor)  echo "$S/openbrain-doctor.sh" ;;          recall)  echo "$S/openbrain-recall.sh" ;;
+        capture) echo "$S/openbrain-capture.sh" ;;         eval)    echo "$ROOT/eval/run.sh" ;;
+        review)  echo "$S/openbrain-review.sh" ;;          install) echo "$S/openbrain-install.sh" ;;
+        triggers) echo "$S/openbrain-triggers-compile.sh" ;; config) echo "$S/openbrain-config.sh" ;;
+        memory:lint) echo "$S/lint-memory.sh" ;;       memory:verify|memory:sign) echo "$S/verify-memory-hmac.sh" ;;
+        memory:index) echo "$S/update-memory-index.sh" ;; memory:metrics) echo "$S/memory-metrics.sh" ;;
+        memory:mark-reviewed) echo "$S/mark-reviewed.sh" ;;
+        memory:backup) echo "$S/backup-memory.sh" ;;   memory:restore) echo "$S/restore-memory.sh" ;;
+        memory:dedupe) echo "$S/dedupe-global-memory-index.sh" ;;
+        memory:redact) echo "$S/redact-before-haiku.sh" ;;
+        *) return 1 ;;
+    esac
+}
+
+confirm() {
+    printf '%s — ¿continuar? [y/N] ' "$1"; read -r a || a=n; case "$a" in y|Y) ;; *) echo "cancelado"; exit 1 ;; esac
+}
+
+cmd="${1:-}"; [ $# -gt 0 ] && shift
+case "$cmd" in
+    ""|-h) usage; [ -z "$cmd" ] && exit 2; exit 0 ;;
+    help) usage; exit 0 ;;
+    version) printf 'openbrain %s\n' "$(jq -r .version "$ROOT/.claude-plugin/plugin.json" 2>/dev/null || echo '?')" ;;
+    --which) [ -n "${1:-}" ] || { echo "uso: openbrain --which <comando|memory:op>" >&2; exit 2; }
+             map "$1" || { echo "openbrain: comando desconocido '$1'" >&2; exit 2; } ;;
+    memory)
+        op="${1:-}"; if [ -n "$op" ]; then shift; else usage; exit 2; fi
+        script="$(map "memory:$op")" || { echo "openbrain memory: op desconocida '$op'" >&2; exit 2; }
+        yes=0; args=(); for a in "$@"; do if [ "$a" = --yes ]; then yes=1; else args+=("$a"); fi; done
+        case "$op" in
+            sign)  [ "$yes" = 1 ] || confirm "Firmar HMAC de toda la memoria bajo \${1:-OPENBRAIN_MEMORY_ROOT} (escribe .hmac)"; exec bash "$script" "${args[0]:-}" sign ;;
+            verify) exec bash "$script" "${args[0]:-}" verify ;;
+            dedupe)
+                apply=0
+                case " ${args[*]:-} " in *" --apply "*) apply=1 ;; esac
+                if [ "${DEDUPE_APPLY:-0}" = 1 ]; then apply=1; fi
+                if [ "$apply" = 1 ] && [ "$yes" != 1 ]; then
+                    confirm "'dedupe --apply' modifica memoria curada"
+                fi
+                exec bash "$script" "${args[@]+"${args[@]}"}" ;;
+            index|mark-reviewed) [ "$yes" = 1 ] || confirm "'$op' modifica memoria curada"; exec bash "$script" "${args[@]+"${args[@]}"}" ;;
+            *) exec bash "$script" "${args[@]+"${args[@]}"}" ;;
+        esac ;;
+    *)
+        script="$(map "$cmd")" || { echo "openbrain: comando desconocido '$cmd'" >&2; usage >&2; exit 2; }
+        exec bash "$script" "$@" ;;
+esac

@@ -1,0 +1,12 @@
+.claude/settings.local.json
+.claude/audit.log
+.claude/.credentials.json
+*.swp
+*.swo
+.DS_Store
+__pycache__/
+
+# Estado local del plugin — nunca versionar
+*.hmac
+tests/.bats-tmp/
+.pytest_cache/

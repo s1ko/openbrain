@@ -1,0 +1,11 @@
+title = "openbrain — gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Fixtures sintéticas de test: patrones de detección, no secretos."
+paths = [
+    '''tests/fixtures/.*''',
+    '''scripts/redact-before-haiku\.sh''',
+]

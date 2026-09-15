@@ -1,0 +1,14 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "openbrain",
+  "description": "Second brain, cascaded memory and continuous improvement for Claude Code.",
+  "owner": { "name": "s1ko" },
+  "plugins": [
+    {
+      "name": "openbrain",
+      "description": "Second brain (qmd recall), HMAC-signed memory, doctrine review and lesson capture.",
+      "source": "./",
+      "category": "productivity"
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+{
+  "collection": "openbrain",
+  "queries": [
+    { "query": "cómo se construye el wiki", "expected_files": ["metodo-wiki.md"], "expected_in_top_k": 10 },
+    { "query": "gobernanza de memoria tipos frontmatter", "expected_files": ["memory-governance-guide.md"], "expected_in_top_k": 5 }
+  ]
+}

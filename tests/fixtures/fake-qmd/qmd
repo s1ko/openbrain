@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# qmd falso: registra la invocación y devuelve resultados enlatados.
+# FAKE_QMD_LOG: fichero donde se anexa la línea de argumentos.
+# FAKE_QMD_MODE: ok (default) | nonjson | fail | slow (5 s, para probar el timeout)
+printf '%s\n' "$*" >> "${FAKE_QMD_LOG:-/dev/null}"
+case "${FAKE_QMD_MODE:-ok}" in
+    fail)    echo "boom" >&2; exit 3 ;;
+    slow)    sleep 5; exit 0 ;;
+    nonjson) echo "esto no es json"; exit 0 ;;
+esac
+# Subcomandos de diagnóstico (openbrain doctor). FAKE_QMD_COLLECTIONS y
+# FAKE_QMD_DOCTOR permiten simular una colección ausente o un doctor con ✗.
+case "$1 ${2:-}" in
+    "collection list") echo "${FAKE_QMD_COLLECTIONS:-c  /tmp/wiki  12 docs}"; exit 0 ;;
+    "doctor "*)  printf '%s\n' "${FAKE_QMD_DOCTOR:-✓ index config: ok
+✓ model cache: ok}"; exit 0 ;;
+    "status "*)  echo "index: ok"; exit 0 ;;
+esac
+# El primer argumento es el subcomando (search|query); el segundo la consulta.
+q="$2"
+case "$q" in
+    *alpha*) echo '[{"file":"qmd://c/alpha-uno.md","score":0.9},{"file":"qmd://c/otro.md","score":0.5}]' ;;
+    *beta*)  echo '[{"file":"qmd://c/otro.md","score":0.9},{"file":"qmd://c/beta-dos.md","score":0.4}]' ;;
+    *)       echo '[]' ;;
+esac
